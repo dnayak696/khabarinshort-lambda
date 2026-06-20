@@ -49,3 +49,5 @@ functions:
     layers:
       - { Ref: SharpLambdaLayer }
       - { Ref: ScrapperLambdaLayer }
+    events:
+      - schedule: rate(5 minutes)
