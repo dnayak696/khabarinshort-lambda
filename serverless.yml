@@ -9,6 +9,14 @@ provider:
   name: aws
   region: ap-south-1
   runtime: nodejs20.x
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+          Resource:
+            - arn:aws:s3:::khabarinshort/*
 
 package:
   individually: true
