@@ -1,0 +1,49 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: khabarinshort
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: KhabarInShort
+
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  region: ap-south-1
+  runtime: nodejs20.x
+
+package:
+  individually: true
+
+layers:
+  sharp:
+    path: layers/sharp
+  scrapper:
+    path: layers/scrapper
+
+functions:
+  dharitri:
+    handler: scrapper/dharirti.handler
+    package:
+      exclude:
+        - scrapper/sambad.js
+        - scrapper/prameya.js
+    layers:
+      - { Ref: SharpLambdaLayer }
+      - { Ref: ScrapperLambdaLayer }
+  sambad:
+    handler: scrapper/sambad.handler
+    package:
+      exclude:
+        - scrapper/dharirti.js
+        - scrapper/prameya.js
+    layers:
+      - { Ref: SharpLambdaLayer }
+      - { Ref: ScrapperLambdaLayer }
+  prameya:
+    handler: scrapper/prameya.handler
+    package:
+      exclude:
+        - scrapper/dharirti.js
+        - scrapper/sambad.js
+    layers:
+      - { Ref: SharpLambdaLayer }
+      - { Ref: ScrapperLambdaLayer }

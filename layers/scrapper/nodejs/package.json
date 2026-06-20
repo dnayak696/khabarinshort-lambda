@@ -1,0 +1,11 @@
+{
+  "name": "scrapper-layer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "aws-sdk": "^2.1692.0",
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0",
+    "uuid": "^11.0.5"
+  }
+}
