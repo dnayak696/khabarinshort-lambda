@@ -11,6 +11,14 @@ const ARTICLE_CARD_SELECTOR = "article.post";
 const BUCKET = "khabarinshort";
 const PREFIX = "dharitri.json";
 
+const navLinks = [
+  "https://www.dharitri.com/category/state-news/",
+  "https://www.dharitri.com/category/odisha-special/",
+  "https://www.dharitri.com/category/international-news/",
+  "https://www.dharitri.com/category/business/",
+  "https://www.dharitri.com/category/entertainment/",
+  "https://www.dharitri.com/category/education-employment/",
+];
 async function scrapeDharitriPost(postUrl) {
   try {
     const res = await axios.get(postUrl);
@@ -67,13 +75,13 @@ exports.handler = async () => {
   const homeRes = await axios.get(URL);
   const $home = cheerio.load(homeRes.data);
 
-  const navLinks = [
-    ...new Set(
-      $home(NAV_SELECTORS.join(","))
-        .map((i, el) => $home(el).attr("href"))
-        .get(),
-    ),
-  ];
+  // const navLinks = [
+  //   ...new Set(
+  //     $home(NAV_SELECTORS.join(","))
+  //       .map((i, el) => $home(el).attr("href"))
+  //       .get(),
+  //   ),
+  // ];
   const filteredNavList = navLinks.slice(1, 11);
   const tmpPostList = [];
   let postList;
