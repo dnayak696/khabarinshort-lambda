@@ -8,7 +8,7 @@ frameworkVersion: "4"
 provider:
   name: aws
   region: ap-south-1
-  runtime: nodejs20.x
+  runtime: nodejs24.x
   iam:
     role:
       statements:
