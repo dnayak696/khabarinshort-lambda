@@ -30,6 +30,7 @@ layers:
 functions:
   dharitri:
     handler: scrapper/dharirti.handler
+    timeout: 90
     package:
       exclude:
         - scrapper/sambad.js
@@ -39,6 +40,7 @@ functions:
       - { Ref: ScrapperLambdaLayer }
   sambad:
     handler: scrapper/sambad.handler
+    timeout: 60
     package:
       exclude:
         - scrapper/dharirti.js
