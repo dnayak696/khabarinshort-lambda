@@ -72,6 +72,7 @@ functions:
       - { Ref: ScrapperLambdaLayer }
   postCreator:
     handler: scrapper/postCreator.handler
+    architecture: x86_64
     timeout: 180
     memorySize: 1024
     environment:
@@ -83,6 +84,9 @@ functions:
       INSTAGRAM_ACCESS_TOKEN: ${env:INSTAGRAM_ACCESS_TOKEN, ""}
       THREADS_API_TOKEN: ${env:THREADS_API_TOKEN, ""}
     package:
+      include:
+        - assets/**
+        - services/**
       exclude:
         - scrapper/dharirti.js
         - scrapper/sambad.js
