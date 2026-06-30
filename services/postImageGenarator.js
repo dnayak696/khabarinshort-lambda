@@ -225,24 +225,9 @@ ${
 }
 
 <!-- App name -->
-<text
-  x="210"
-  y="${HEIGHT - bottomSectionHeight + 90}"
-  fill="#FFFFFF"
-  font-size="30"
- 
-  font-weight="900">
-  KHABAR IN SHORT
-</text>
+<text x="210" y="${HEIGHT - bottomSectionHeight + 90}" fill="#FFFFFF" font-size="30" font-weight="900">KHABAR IN SHORT</text>
 
-<text
-  x="210"
-  y="${HEIGHT - bottomSectionHeight + 125}"
-  fill="#CBD5E1"
-  font-size="18"
- >
-  Odisha's Trusted News App
-</text>
+<text x="210" y="${HEIGHT - bottomSectionHeight + 125}" fill="#CBD5E1" font-size="18">Odisha's Trusted News App</text>
 
 <!-- Play Store container -->
 <rect
