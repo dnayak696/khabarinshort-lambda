@@ -62,8 +62,8 @@ const newsFooter = ({
   <circle cx="80" cy="${HEIGHT - bottomSectionHeight + 80}" r="120" fill="rgba(253,224,71,0.05)" />
   <circle cx="120" cy="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2}" r="45" fill="rgba(255,255,255,0.15)" />
   ${logoNewBase64 ? `<image x="70" y="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2 - 50}" width="100" height="100" preserveAspectRatio="xMidYMid slice" href="data:image/png;base64,${logoNewBase64}" clip-path="url(#newsFooterClip)"/>` : ""}
-  <text x="210" y="${HEIGHT - bottomSectionHeight + 90}" fill="#FFFFFF" font-size="30" font-family="${UI_FONT_FAMILY}" font-weight="900">KHABAR IN SHORT</text>
-  <text x="210" y="${HEIGHT - bottomSectionHeight + 125}" fill="#CBD5E1" font-size="18" font-family="${UI_FONT_FAMILY}">Odisha's Trusted News App</text>
+  <text x="210" y="${HEIGHT - bottomSectionHeight + 90}" fill="#FFFFFF" font-size="30" font-family="${UI_FONT_FAMILY}" font-weight="900">${escapeXML("KHABAR IN SHORT ")}</text>
+  <text x="210" y="${HEIGHT - bottomSectionHeight + 125}" fill="#CBD5E1" font-size="18" font-family="${UI_FONT_FAMILY}">${escapeXML("Odisha's Trusted News App")}</text>
   <rect x="${WIDTH - 320}" y="${HEIGHT - bottomSectionHeight + 50}" width="250" height="90" rx="25" fill="rgba(255,255,255,0.10)" />
   ${downloadBase64 ? `<image x="${WIDTH - 300}" y="${HEIGHT - bottomSectionHeight + 60}" width="210" height="70" preserveAspectRatio="xMidYMid meet" href="data:image/png;base64,${downloadBase64}"/>` : ""}
 `;
