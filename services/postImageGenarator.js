@@ -5,8 +5,6 @@ const FONTCONFIG_PATH = ASSETS_DIR;
 const ODIA_FONT_FAMILY = "Noto Sans Oriya";
 const UI_FONT_FAMILY = `${ODIA_FONT_FAMILY}, Arial, sans-serif`;
 
-process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || FONTCONFIG_PATH;
-
 const sharp = require("sharp");
 const axios = require("axios");
 const fs = require("fs");
