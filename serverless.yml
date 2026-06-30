@@ -93,7 +93,7 @@ functions:
         - scrapper/prameya.js
     layers:
       - { Ref: ScrapperLambdaLayer }
-      - arn:aws:lambda:ap-south-1:473339302343:layer:sharp-image:1
+      - arn:aws:lambda:ap-south-1:473339302343:layer:sharp-image:2
     events:
       - http:
           path: post-creator
