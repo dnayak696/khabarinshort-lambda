@@ -32,8 +32,6 @@ package:
   individually: true
 
 layers:
-  sharp:
-    path: layers/sharp
   scrapper:
     path: layers/scrapper
 
@@ -49,7 +47,6 @@ functions:
         - scrapper/sambad.js
         - scrapper/prameya.js
     layers:
-      - { Ref: SharpLambdaLayer }
       - { Ref: ScrapperLambdaLayer }
   sambad:
     handler: scrapper/sambad.handler
@@ -62,7 +59,6 @@ functions:
         - scrapper/dharirti.js
         - scrapper/prameya.js
     layers:
-      - { Ref: SharpLambdaLayer }
       - { Ref: ScrapperLambdaLayer }
     events:
       - schedule: rate(5 minutes)
@@ -73,7 +69,6 @@ functions:
         - scrapper/dharirti.js
         - scrapper/sambad.js
     layers:
-      - { Ref: SharpLambdaLayer }
       - { Ref: ScrapperLambdaLayer }
   postCreator:
     handler: scrapper/postCreator.handler
@@ -93,7 +88,6 @@ functions:
         - scrapper/sambad.js
         - scrapper/prameya.js
     layers:
-      - { Ref: SharpLambdaLayer }
       - { Ref: ScrapperLambdaLayer }
     events:
       - http:
