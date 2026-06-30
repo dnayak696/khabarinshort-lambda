@@ -2,35 +2,9 @@ const path = require("path");
 const fs = require("fs");
 
 const ASSETS_DIR = path.join(__dirname, "../assets");
-const FONT_DIR = path.join(ASSETS_DIR, "fonts");
-const FONTCONFIG_FILE = path.join("/tmp", "khabar-fonts.conf");
-const FONTCONFIG_CACHE_DIR = path.join("/tmp", "fontconfig-cache");
-const ODIA_FONT_FAMILY = "Noto Sans Oriya";
-const UI_FONT_FAMILY = `${ODIA_FONT_FAMILY}, Arial, sans-serif`;
-
-configureFontConfig();
 
 const sharp = require("sharp");
 const axios = require("axios");
-
-function configureFontConfig() {
-  fs.mkdirSync(FONTCONFIG_CACHE_DIR, { recursive: true });
-
-  fs.writeFileSync(
-    FONTCONFIG_FILE,
-    `<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <dir>${escapeXml(FONT_DIR)}</dir>
-  <cachedir>${escapeXml(FONTCONFIG_CACHE_DIR)}</cachedir>
-</fontconfig>
-`,
-  );
-
-  process.env.FONTCONFIG_FILE = FONTCONFIG_FILE;
-  process.env.FONTCONFIG_PATH = "/tmp";
-  process.env.XDG_CACHE_HOME = "/tmp";
-}
 
 function escapeXml(value) {
   return String(value)
@@ -62,15 +36,15 @@ const newsFooter = ({
   <circle cx="80" cy="${HEIGHT - bottomSectionHeight + 80}" r="120" fill="rgba(253,224,71,0.05)" />
   <circle cx="120" cy="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2}" r="45" fill="rgba(255,255,255,0.15)" />
   ${logoNewBase64 ? `<image x="70" y="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2 - 50}" width="100" height="100" preserveAspectRatio="xMidYMid slice" href="data:image/png;base64,${logoNewBase64}" clip-path="url(#newsFooterClip)"/>` : ""}
-  <text x="210" y="${HEIGHT - bottomSectionHeight + 90}" fill="#FFFFFF" font-size="30" font-family="${UI_FONT_FAMILY}" font-weight="900">KHABAR IN SHORT</text>
-  <text x="210" y="${HEIGHT - bottomSectionHeight + 125}" fill="#CBD5E1" font-size="18" font-family="${UI_FONT_FAMILY}">Odisha's Trusted News App</text>
+  <text x="210" y="${HEIGHT - bottomSectionHeight + 90}" fill="#FFFFFF" font-size="30" font-weight="900">KHABAR IN SHORT</text>
+  <text x="210" y="${HEIGHT - bottomSectionHeight + 125}" fill="#CBD5E1" font-size="18">Odisha's Trusted News App</text>
   <rect x="${WIDTH - 320}" y="${HEIGHT - bottomSectionHeight + 50}" width="250" height="90" rx="25" fill="rgba(255,255,255,0.10)" />
   ${downloadBase64 ? `<image x="${WIDTH - 300}" y="${HEIGHT - bottomSectionHeight + 60}" width="210" height="70" preserveAspectRatio="xMidYMid meet" href="data:image/png;base64,${downloadBase64}"/>` : ""}
 `;
 
 const templateHeader = ({ WIDTH, title }) => `
   <rect x="0" y="0" width="${WIDTH}" height="160" fill="rgba(15,23,42,0.96)" />
-  <text x="${WIDTH / 2}" y="100" fill="#FDE047" font-size="42" font-family="${UI_FONT_FAMILY}" font-weight="900" text-anchor="middle">${escapeXML(title || "NEWS CARD SORT")}</text>
+  <text x="${WIDTH / 2}" y="100" fill="#FDE047" font-size="42" font-weight="900" text-anchor="middle">${escapeXML(title || "NEWS CARD SORT")}</text>
 `;
 
 const templates = [
@@ -98,12 +72,12 @@ const templates = [
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#1D4ED8" />
         <circle cx="320" cy="${IMAGE_HEIGHT + 120}" r="220" fill="rgba(255,255,255,0.05)" />
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="rgba(0,0,0,0.3)" />
-        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#F8FAFC" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700">LATEST UPDATE</text>
-        <text x="60" y="${IMAGE_HEIGHT + 130}" fill="url(#textGrad)" font-size="52" font-family="${UI_FONT_FAMILY}" font-weight="800">
+        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#F8FAFC" font-size="24" font-weight="700">LATEST UPDATE</text>
+        <text x="60" y="${IMAGE_HEIGHT + 130}" fill="url(#textGrad)" font-size="52" font-weight="800">
           ${lines.map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : 60}">${escapeXML(line)}</tspan>`).join("")}
         </text>
         <rect x="60" y="${IMAGE_HEIGHT + 340}" width="220" height="50" rx="25" fill="#F59E0B" />
-        <text x="170" y="${IMAGE_HEIGHT + 375}" fill="#111827" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700" text-anchor="middle">TRENDING</text>
+        <text x="170" y="${IMAGE_HEIGHT + 375}" fill="#111827" font-size="24" font-weight="700" text-anchor="middle">TRENDING</text>
         ${newsFooter({ WIDTH, HEIGHT, bottomSectionHeight, downloadBase64, logoNewBase64 })}
       </svg>
       `;
@@ -192,10 +166,10 @@ const templates = [
           </clipPath>
         </defs>
         <rect x="0" y="0" width="${WIDTH}" height="${titleBandHeight}" fill="rgba(15,23,42,0.96)" />
-        <text x="${WIDTH / 2}" y="${titleY}" fill="#FDE047" font-size="42" font-family="${UI_FONT_FAMILY}" font-weight="900" text-anchor="middle">${escapeXML(title || "NEWS CARD SORT")}</text>
+        <text x="${WIDTH / 2}" y="${titleY}" fill="#FDE047" font-size="42" font-weight="900" text-anchor="middle">${escapeXML(title || "NEWS CARD SORT")}</text>
         <rect x="0" y="${bottomBandTop}" width="${WIDTH}" height="${HEIGHT - bottomBandTop}" fill="#0F172A" />
         <rect x="0" y="${bottomBandTop + 30}" width="${WIDTH}" height="320" rx="40" fill="#111827" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
-        <text x="${WIDTH / 2}" y="${bodyY}" fill="url(#textGrad)" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="900" text-anchor="middle">
+        <text x="${WIDTH / 2}" y="${bodyY}" fill="url(#textGrad)" font-size="48" font-weight="900" text-anchor="middle">
           ${lines.map((line, i) => `<tspan x="${WIDTH / 2}" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
         </text>
        <!-- Footer background -->
@@ -256,7 +230,7 @@ ${
   y="${HEIGHT - bottomSectionHeight + 90}"
   fill="#FFFFFF"
   font-size="30"
-  font-family="${UI_FONT_FAMILY}"
+ 
   font-weight="900">
   KHABAR IN SHORT
 </text>
@@ -266,7 +240,7 @@ ${
   y="${HEIGHT - bottomSectionHeight + 125}"
   fill="#CBD5E1"
   font-size="18"
-  font-family="${UI_FONT_FAMILY}">
+ >
   Odisha's Trusted News App
 </text>
 
@@ -319,8 +293,8 @@ ${
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#020617" />
         <rect x="40" y="${IMAGE_HEIGHT + 30}" width="1000" height="280" rx="40" fill="rgba(15,23,42,0.92)" />
         <circle cx="900" cy="${IMAGE_HEIGHT + 100}" r="180" fill="url(#halo)" />
-        <text x="80" y="${IMAGE_HEIGHT + 70}" fill="#38BDF8" font-size="28" font-family="${UI_FONT_FAMILY}" font-weight="700">NEW FLASH</text>
-        <text x="80" y="${IMAGE_HEIGHT + 130}" fill="#F8FAFC" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
+        <text x="80" y="${IMAGE_HEIGHT + 70}" fill="#38BDF8" font-size="28" font-weight="700">NEW FLASH</text>
+        <text x="80" y="${IMAGE_HEIGHT + 130}" fill="#F8FAFC" font-size="48" font-weight="800">
           ${lines.map((line, i) => `<tspan x="80" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
         </text>
         <line x1="80" y1="${IMAGE_HEIGHT + 280}" x2="420" y2="${IMAGE_HEIGHT + 280}" stroke="#38BDF8" stroke-width="6" />
@@ -347,13 +321,13 @@ ${
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#111827" />
         <rect x="60" y="${IMAGE_HEIGHT + 30}" width="960" height="280" rx="40" fill="rgba(15,23,42,0.88)" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
         <rect x="640" y="${IMAGE_HEIGHT + 50}" width="320" height="80" rx="30" fill="#2563EB" />
-        <text x="670" y="${IMAGE_HEIGHT + 90}" fill="#fff" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700">BREAKING</text>
-        <text x="90" y="${IMAGE_HEIGHT + 90}" fill="#E2E8F0" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700">TODAY</text>
-        <text x="90" y="${IMAGE_HEIGHT + 150}" fill="#FFFFFF" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
+        <text x="670" y="${IMAGE_HEIGHT + 90}" fill="#fff" font-size="24" font-weight="700">BREAKING</text>
+        <text x="90" y="${IMAGE_HEIGHT + 90}" fill="#E2E8F0" font-size="24" font-weight="700">TODAY</text>
+        <text x="90" y="${IMAGE_HEIGHT + 150}" fill="#FFFFFF" font-size="48" font-weight="800">
           ${lines.map((line, i) => `<tspan x="90" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
         </text>
         <rect x="90" y="${IMAGE_HEIGHT + 330}" width="260" height="45" rx="23" fill="#22C55E" />
-        <text x="220" y="${IMAGE_HEIGHT + 358}" fill="#fff" font-size="20" font-family="${UI_FONT_FAMILY}" font-weight="700" text-anchor="middle">INSIDE STORY</text>
+        <text x="220" y="${IMAGE_HEIGHT + 358}" fill="#fff" font-size="20" font-weight="700" text-anchor="middle">INSIDE STORY</text>
         ${newsFooter({ WIDTH, HEIGHT, bottomSectionHeight, downloadBase64, logoNewBase64 })}
       </svg>
       `;
@@ -377,9 +351,9 @@ ${
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="80" fill="#F97316" />
         <rect x="0" y="${IMAGE_HEIGHT + 80}" width="${WIDTH}" height="80" fill="#0891B2" />
         <rect x="0" y="${IMAGE_HEIGHT + 160}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT - 160}" fill="#0EA5E9" />
-        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#fff" font-size="26" font-family="${UI_FONT_FAMILY}" font-weight="700">SPOTLIGHT</text>
-        <text x="60" y="${IMAGE_HEIGHT + 130}" fill="#fff" font-size="26" font-family="${UI_FONT_FAMILY}" font-weight="700">LATEST HEADLINES</text>
-        <text x="60" y="${IMAGE_HEIGHT + 210}" fill="#0F172A" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
+        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#fff" font-size="26" font-weight="700">SPOTLIGHT</text>
+        <text x="60" y="${IMAGE_HEIGHT + 130}" fill="#fff" font-size="26" font-weight="700">LATEST HEADLINES</text>
+        <text x="60" y="${IMAGE_HEIGHT + 210}" fill="#0F172A" font-size="48" font-weight="800">
           ${lines.map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : 60}">${escapeXML(line)}</tspan>`).join("")}
         </text>
         <circle cx="980" cy="${IMAGE_HEIGHT + 100}" r="70" fill="#F8FAFC" opacity="0.18" />
@@ -406,8 +380,8 @@ ${
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#F8FAFC" />
         <rect x="40" y="${IMAGE_HEIGHT + 20}" width="1000" height="300" rx="40" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
         <rect x="60" y="${IMAGE_HEIGHT + 30}" width="240" height="50" rx="30" fill="#8B5CF6" />
-        <text x="180" y="${IMAGE_HEIGHT + 65}" fill="#fff" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700" text-anchor="middle">TOP STORY</text>
-        <text x="60" y="${IMAGE_HEIGHT + 120}" fill="#111827" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
+        <text x="180" y="${IMAGE_HEIGHT + 65}" fill="#fff" font-size="24" font-weight="700" text-anchor="middle">TOP STORY</text>
+        <text x="60" y="${IMAGE_HEIGHT + 120}" fill="#111827" font-size="48" font-weight="800">
           ${lines.map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
         </text>
         <line x1="60" y1="${IMAGE_HEIGHT + 280}" x2="380" y2="${IMAGE_HEIGHT + 280}" stroke="#A855F7" stroke-width="8" />
