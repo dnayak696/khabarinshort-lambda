@@ -1,11 +1,14 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const { v4: uuidv4 } = require("uuid");
-const { S3, CloudFront } = require("aws-sdk");
+const { S3 } = require("aws-sdk");
 const s3 = new S3();
-const cloudFront = new CloudFront();
-const bucketName = "khabarinshort"; // Replace with your actual S3 bucket name
-const fileName = "sambad.json";
+const bucketName = process.env.NEWS_BUCKET || "khabarinshort";
+const fileName = process.env.SAMBAD_KEY || "sambad.json";
+const AXIOS_CONFIG = {
+  timeout: 15000,
+  headers: { "User-Agent": "Mozilla/5.0" },
+};
 
 const groups = [
   "india-and-beyond",
@@ -28,9 +31,7 @@ exports.handler = async () => {
     const categoryName = group;
     const categoryNews = [];
     try {
-      const res = await axios.get(`https://sambad.in/${group}`, {
-        headers: { "User-Agent": "Mozilla/5.0" },
-      });
+      const res = await axios.get(`https://sambad.in/${group}`, AXIOS_CONFIG);
 
       console.log(`Status Code for ${group}:`, res.status);
       if (res.status === 200) {
@@ -46,11 +47,9 @@ exports.handler = async () => {
           console.log("Published At", publishedAt);
           postList.push({ postUrl, publishedAt });
         });
-        for (const data of postList) {
+        for (const data of postList.filter((item) => item.postUrl)) {
           try {
-            const res1 = await axios.get(data.postUrl, {
-              headers: { "User-Agent": "Mozilla/5.0" },
-            });
+            const res1 = await axios.get(data.postUrl, AXIOS_CONFIG);
             const $1 = cheerio.load(res1.data);
             const id = uuidv4();
             const article = $1("article");
@@ -116,7 +115,7 @@ exports.handler = async () => {
       //Save Category File
       // filter the file if the data alredy exist then Skip the file
       // Update only new Data
-      saveNewsByCategory(categoryName, categoryNews);
+      await saveNewsByCategory(categoryName, categoryNews);
     } catch (err) {
       console.error("Error fetching group page:", err.message);
     }
@@ -141,10 +140,9 @@ exports.handler = async () => {
     console.error("Error uploading to S3:", err.message);
   }
 
-  console.log(data2);
   return {
     statusCode: 200,
-    body: JSON.stringify(data2),
+    body: "Data scrapped",
   };
 };
 
@@ -172,11 +170,13 @@ function saveNewsByCategory(categoryName, categoryNews) {
     Body: JSON.stringify(categoryNews, null, 2),
     ContentType: "application/json",
   };
-  s3.putObject(params, (err, data) => {
-    if (err) {
-      console.error("Error uploading to S3:", err.message);
-    } else {
+  return s3
+    .putObject(params)
+    .promise()
+    .then(() => {
       console.log(`Data successfully uploaded to S3: ${fileName}`);
-    }
-  });
+    })
+    .catch((err) => {
+      console.error("Error uploading to S3:", err.message);
+    });
 }

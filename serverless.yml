@@ -14,9 +14,19 @@ provider:
       statements:
         - Effect: Allow
           Action:
+            - s3:GetObject
             - s3:PutObject
           Resource:
             - arn:aws:s3:::khabarinshort/*
+        - Effect: Allow
+          Action:
+            - cloudfront:CreateInvalidation
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+          Resource:
+            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${sls:stage}-postCreator
 
 package:
   individually: true
@@ -31,6 +41,9 @@ functions:
   dharitri:
     handler: scrapper/dharirti.handler
     timeout: 90
+    environment:
+      NEWS_BUCKET: ${env:NEWS_BUCKET, "khabarinshort"}
+      DHARITRI_KEY: ${env:DHARITRI_KEY, "dharitri.json"}
     package:
       exclude:
         - scrapper/sambad.js
@@ -41,6 +54,9 @@ functions:
   sambad:
     handler: scrapper/sambad.handler
     timeout: 60
+    environment:
+      NEWS_BUCKET: ${env:NEWS_BUCKET, "khabarinshort"}
+      SAMBAD_KEY: ${env:SAMBAD_KEY, "sambad.json"}
     package:
       exclude:
         - scrapper/dharirti.js
@@ -59,3 +75,50 @@ functions:
     layers:
       - { Ref: SharpLambdaLayer }
       - { Ref: ScrapperLambdaLayer }
+  postCreator:
+    handler: scrapper/postCreator.handler
+    timeout: 180
+    memorySize: 1024
+    environment:
+      POST_IMAGES_BUCKET: ${env:POST_IMAGES_BUCKET, "khabarinshort"}
+      CLOUDFRONT_DOMAIN: ${env:CLOUDFRONT_DOMAIN, "d2berfdio9bieg.cloudfront.net"}
+      FACEBOOK_PAGE_ID: ${env:FACEBOOK_PAGE_ID, ""}
+      FACEBOOK_ACCESS_TOKEN: ${env:FACEBOOK_ACCESS_TOKEN, ""}
+      INSTAGRAM_ACCOUNT_ID: ${env:INSTAGRAM_ACCOUNT_ID, ""}
+      INSTAGRAM_ACCESS_TOKEN: ${env:INSTAGRAM_ACCESS_TOKEN, ""}
+      THREADS_API_TOKEN: ${env:THREADS_API_TOKEN, ""}
+    package:
+      exclude:
+        - scrapper/dharirti.js
+        - scrapper/sambad.js
+        - scrapper/prameya.js
+    layers:
+      - { Ref: SharpLambdaLayer }
+      - { Ref: ScrapperLambdaLayer }
+    events:
+      - http:
+          path: post-creator
+          method: post
+          cors: true
+  aggregator:
+    handler: scrapper/aggregator.handler
+    timeout: 90
+    environment:
+      NEWS_BUCKET: ${env:NEWS_BUCKET, "khabarinshort"}
+      AGGREGATOR_SOURCES: ${env:AGGREGATOR_SOURCES, ""}
+      LATEST_NEWS_KEY: ${env:LATEST_NEWS_KEY, "latest.json"}
+      FCM_TOPIC: ${env:FCM_TOPIC, "all"}
+      CLOUDFRONT_DISTRIBUTION_ID: ${env:CLOUDFRONT_DISTRIBUTION_ID, "E228ARQQG8BLTJ"}
+      POST_CREATOR_FUNCTION_NAME: ${env:POST_CREATOR_FUNCTION_NAME, "${self:service}-${sls:stage}-postCreator"}
+      FIREBASE_SERVICE_ACCOUNT_BASE64: ${env:FIREBASE_SERVICE_ACCOUNT_BASE64, ""}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${env:FIREBASE_SERVICE_ACCOUNT_JSON, ""}
+    package:
+      exclude:
+        - scrapper/dharirti.js
+        - scrapper/sambad.js
+        - scrapper/prameya.js
+        - scrapper/postCreator.js
+    layers:
+      - { Ref: ScrapperLambdaLayer }
+    events:
+      - schedule: rate(30 minutes)

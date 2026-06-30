@@ -1,2 +1,4 @@
 node_modules
 .serverless
+.env
+utils/ksmobile-48697-firebase-adminsdk-kkot5-2e3117d06a.json
