@@ -1,13 +1,44 @@
 const path = require("path");
+const fs = require("fs");
 
 const ASSETS_DIR = path.join(__dirname, "../assets");
-const FONTCONFIG_PATH = ASSETS_DIR;
+const FONT_DIR = path.join(ASSETS_DIR, "fonts");
+const FONTCONFIG_FILE = path.join("/tmp", "khabar-fonts.conf");
+const FONTCONFIG_CACHE_DIR = path.join("/tmp", "fontconfig-cache");
 const ODIA_FONT_FAMILY = "Noto Sans Oriya";
 const UI_FONT_FAMILY = `${ODIA_FONT_FAMILY}, Arial, sans-serif`;
 
+configureFontConfig();
+
 const sharp = require("sharp");
 const axios = require("axios");
-const fs = require("fs");
+
+function configureFontConfig() {
+  fs.mkdirSync(FONTCONFIG_CACHE_DIR, { recursive: true });
+
+  fs.writeFileSync(
+    FONTCONFIG_FILE,
+    `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>${escapeXml(FONT_DIR)}</dir>
+  <cachedir>${escapeXml(FONTCONFIG_CACHE_DIR)}</cachedir>
+</fontconfig>
+`,
+  );
+
+  process.env.FONTCONFIG_FILE = FONTCONFIG_FILE;
+  process.env.FONTCONFIG_PATH = "/tmp";
+  process.env.XDG_CACHE_HOME = "/tmp";
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 const newsFooter = ({
   WIDTH,
