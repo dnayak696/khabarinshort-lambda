@@ -6,7 +6,23 @@ const FONT_DIR = path.join(ASSETS_DIR, "fonts");
 const FONTCONFIG_FILE = path.join("/tmp", "khabar-fonts.conf");
 const FONTCONFIG_CACHE_DIR = path.join("/tmp", "fontconfig-cache");
 const ODIA_FONT_FAMILY = "Noto Sans Oriya";
-const UI_FONT_FAMILY = `${ODIA_FONT_FAMILY}, Arial, sans-serif`;
+const UI_FONT_FAMILY = `${ODIA_FONT_FAMILY}, 'Noto Sans', Arial, sans-serif`;
+const ODIA_TEXT_PATTERN = /[\u0B00-\u0B7F]/;
+const TITLE_MAX_CHARS = 22;
+const TITLE_MAX_LINES = 3;
+const TITLE_MAX_WIDTH = 900;
+const ENGLISH_FONT_FAMILIES = {
+  robotoBlack:
+    "'Roboto Black', Roboto, 'Arial Black', Impact, 'Noto Sans', Arial, sans-serif",
+  brand:
+    "'Roboto Black', Roboto, 'Arial Black', Impact, 'Noto Sans', Arial, sans-serif",
+  condensed:
+    "Impact, 'Arial Narrow', 'Noto Sans Condensed', 'Noto Sans', Arial, sans-serif",
+  editorial: "Georgia, 'Times New Roman', serif",
+  modern: "'Avenir Next', Montserrat, 'Noto Sans', Arial, sans-serif",
+  clean: "'Helvetica Neue', Helvetica, 'Noto Sans', Arial, sans-serif",
+  slab: "Rockwell, Georgia, 'Noto Serif', serif",
+};
 
 configureFontConfig();
 
@@ -16,12 +32,23 @@ const axios = require("axios");
 function configureFontConfig() {
   fs.mkdirSync(FONTCONFIG_CACHE_DIR, { recursive: true });
 
+  const fontDirs = [
+    FONT_DIR,
+    "/usr/share/fonts",
+    "/usr/local/share/fonts",
+    "/Library/Fonts",
+  ].filter((fontDir) => fs.existsSync(fontDir));
+
+  const fontDirsXml = fontDirs
+    .map((fontDir) => `  <dir>${escapeXml(fontDir)}</dir>`)
+    .join("\n");
+
   fs.writeFileSync(
     FONTCONFIG_FILE,
     `<?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
 <fontconfig>
-  <dir>${escapeXml(FONT_DIR)}</dir>
+${fontDirsXml}
   <cachedir>${escapeXml(FONTCONFIG_CACHE_DIR)}</cachedir>
 </fontconfig>
 `,
@@ -38,6 +65,53 @@ function escapeXml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function fontForText(value, englishFontFamily = ENGLISH_FONT_FAMILIES.modern) {
+  return ODIA_TEXT_PATTERN.test(value || "")
+    ? UI_FONT_FAMILY
+    : englishFontFamily;
+}
+
+function getOptimizedFontSize(text, baseSize, minSize = 28) {
+  const normalized = String(text || "").replace(/\s+/g, "");
+  if (!normalized) return baseSize;
+  if (normalized.length > 70) return Math.max(minSize, baseSize - 10);
+  if (normalized.length > 46) return Math.max(minSize, baseSize - 6);
+  if (normalized.length > 28) return Math.max(minSize, baseSize - 3);
+  return baseSize;
+}
+
+function renderMultilineText({
+  x,
+  y,
+  lines,
+  fill,
+  fontFamily,
+  fontSize,
+  fontWeight = 700,
+  lineHeight = 56,
+  anchor = "start",
+}) {
+  const normalizedLines = Array.isArray(lines) && lines.length ? lines : [""];
+  const attrs = [
+    `x="${x}"`,
+    `y="${y}"`,
+    `fill="${fill}"`,
+    `font-size="${fontSize}"`,
+    `font-family="${fontFamily}"`,
+    `font-weight="${fontWeight}"`,
+    anchor !== "start" ? `text-anchor="${anchor}"` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `<text ${attrs}>${normalizedLines
+    .map((line, index) => {
+      const dy = index === 0 ? 0 : lineHeight;
+      return `<tspan x="${x}" dy="${dy}"${fitTextAttrs(line)}>${escapeXML(line || "")}</tspan>`;
+    })
+    .join("")}</text>`;
 }
 
 const newsFooter = ({
@@ -62,16 +136,27 @@ const newsFooter = ({
   <circle cx="80" cy="${HEIGHT - bottomSectionHeight + 80}" r="120" fill="rgba(253,224,71,0.05)" />
   <circle cx="120" cy="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2}" r="45" fill="rgba(255,255,255,0.15)" />
   ${logoNewBase64 ? `<image x="70" y="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2 - 50}" width="100" height="100" preserveAspectRatio="xMidYMid slice" href="data:image/png;base64,${logoNewBase64}" clip-path="url(#newsFooterClip)"/>` : ""}
-  <text x="210" y="${HEIGHT - bottomSectionHeight + 90}" fill="#FFFFFF" font-size="30" font-family="${UI_FONT_FAMILY}" font-weight="900">${escapeXML("KHABAR IN SHORT ")}</text>
-  <text x="210" y="${HEIGHT - bottomSectionHeight + 125}" fill="#CBD5E1" font-size="18" font-family="${UI_FONT_FAMILY}">${escapeXML("Odisha's Trusted News App")}</text>
+  <text x="210" y="${HEIGHT - bottomSectionHeight + 90}" fill="#FFFFFF" font-size="30" font-family="${ENGLISH_FONT_FAMILIES.brand}" font-weight="900">KHABAR IN SHORT</text>
+  <text x="210" y="${HEIGHT - bottomSectionHeight + 125}" fill="#CBD5E1" font-size="18" font-family="${ENGLISH_FONT_FAMILIES.clean}" font-weight="500">Odisha's Trusted News App</text>
   <rect x="${WIDTH - 320}" y="${HEIGHT - bottomSectionHeight + 50}" width="250" height="90" rx="25" fill="rgba(255,255,255,0.10)" />
   ${downloadBase64 ? `<image x="${WIDTH - 300}" y="${HEIGHT - bottomSectionHeight + 60}" width="210" height="70" preserveAspectRatio="xMidYMid meet" href="data:image/png;base64,${downloadBase64}"/>` : ""}
 `;
 
-const templateHeader = ({ WIDTH, title }) => `
-  <rect x="0" y="0" width="${WIDTH}" height="160" fill="rgba(15,23,42,0.96)" />
-  <text x="${WIDTH / 2}" y="100" fill="#FDE047" font-size="42" font-family="${UI_FONT_FAMILY}" font-weight="900" text-anchor="middle">${escapeXML(title || "NEWS CARD SORT")}</text>
-`;
+const templateHeader = ({ WIDTH, title, titleLines }) => {
+const headerFontSize = getOptimizedFontSize(title, 42, 30);
+      const headerLineHeight = Math.max(36, Math.round(headerFontSize * 0.95));
+
+  return `
+    <rect x="0" y="0" width="${WIDTH}" height="180" fill="rgba(15,23,42,0.96)" />
+    <text x="${WIDTH / 2}" y="96" fill="#FDE047" font-size="${headerFontSize}" font-family="${fontForText(title, ENGLISH_FONT_FAMILIES.brand)}" font-weight="900" text-anchor="middle">
+      ${titleLines
+        .map(
+          (line, i) => `<tspan x="${WIDTH / 2}" dy="${i === 0 ? 0 : headerLineHeight}"${fitTextAttrs(line)}>${escapeXML(line || "")}</tspan>`,
+        )
+        .join("")}
+    </text>
+  `;
+};
 
 const templates = [
   {
@@ -81,6 +166,7 @@ const templates = [
       HEIGHT,
       IMAGE_HEIGHT,
       title,
+      titleLines,
       lines,
       downloadBase64,
       logoNewBase64,
@@ -88,7 +174,7 @@ const templates = [
       const bottomSectionHeight = 200;
       return `
       <svg width="${WIDTH}" height="${HEIGHT}">
-        ${templateHeader({ WIDTH, title })}
+        ${templateHeader({ WIDTH, title, titleLines })}
         <defs>
           <linearGradient id="textGrad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stop-color="#fff"/>
@@ -98,201 +184,22 @@ const templates = [
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#1D4ED8" />
         <circle cx="320" cy="${IMAGE_HEIGHT + 120}" r="220" fill="rgba(255,255,255,0.05)" />
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="rgba(0,0,0,0.3)" />
-        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#F8FAFC" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700">LATEST UPDATE</text>
-        <text x="60" y="${IMAGE_HEIGHT + 130}" fill="url(#textGrad)" font-size="52" font-family="${UI_FONT_FAMILY}" font-weight="800">
-          ${lines.map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : 60}">${escapeXML(line)}</tspan>`).join("")}
-        </text>
+        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#F8FAFC" font-size="24" font-family="${ENGLISH_FONT_FAMILIES.condensed}" font-weight="700">LATEST UPDATE</text>
+        ${renderMultilineText({
+          x: 60,
+          y: IMAGE_HEIGHT + 130,
+          lines,
+          fill: "url(#textGrad)",
+          fontFamily: fontForText(lines.join(" "), ENGLISH_FONT_FAMILIES.brand),
+          fontSize: getOptimizedFontSize(lines.join(" "), 54, 40),
+          fontWeight: 800,
+          lineHeight: 54,
+        })}
         <rect x="60" y="${IMAGE_HEIGHT + 340}" width="220" height="50" rx="25" fill="#F59E0B" />
-        <text x="170" y="${IMAGE_HEIGHT + 375}" fill="#111827" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700" text-anchor="middle">TRENDING</text>
+        <text x="170" y="${IMAGE_HEIGHT + 375}" fill="#111827" font-size="24" font-family="${ENGLISH_FONT_FAMILIES.brand}" font-weight="700" text-anchor="middle">TRENDING</text>
         ${newsFooter({ WIDTH, HEIGHT, bottomSectionHeight, downloadBase64, logoNewBase64 })}
       </svg>
       `;
-    },
-  },
-  {
-    name: "News Sort",
-    svg: ({
-      WIDTH,
-      HEIGHT,
-      IMAGE_HEIGHT,
-      lines,
-      title,
-      description,
-      downloadBase64,
-      logoNewBase64,
-    }) => {
-      const titleBandHeight = 160;
-      const titleY = 100;
-      const bottomBandTop = IMAGE_HEIGHT;
-      const bodyY = IMAGE_HEIGHT + 60;
-      const bottomSectionHeight = 180;
-      const logoY = HEIGHT - bottomSectionHeight + 20;
-      const logoNewX = WIDTH / 2 - 180;
-      const downloadLogoX = WIDTH / 2 + 80;
-      const appNameY = HEIGHT - 20;
-
-      const paletteOptions = [
-        {
-          sortFrom: "#0EA5E9",
-          sortTo: "#2563EB",
-          textStops: ["#FF6B6B", "#FFA500", "#FFD700", "#00D4FF", "#00FF88"],
-          bottomFrom: "#1F2937",
-          bottomMid: "#0F172A",
-          bottomTo: "#111827",
-        },
-        {
-          sortFrom: "#F59E0B",
-          sortTo: "#EF4444",
-          textStops: ["#FFF7ED", "#FBBF24", "#F97316", "#EF4444", "#EC4899"],
-          bottomFrom: "#161618",
-          bottomMid: "#292D3C",
-          bottomTo: "#111827",
-        },
-        {
-          sortFrom: "#22C55E",
-          sortTo: "#14B8A6",
-          textStops: ["#D9F99D", "#86EFAC", "#22C55E", "#14B8A6", "#0F766E"],
-          bottomFrom: "#111827",
-          bottomMid: "#0F172A",
-          bottomTo: "#111827",
-        },
-        {
-          sortFrom: "#8B5CF6",
-          sortTo: "#EC4899",
-          textStops: ["#EDE9FE", "#C4B5FD", "#A78BFA", "#E879F9", "#F472B6"],
-          bottomFrom: "#131A2D",
-          bottomMid: "#1E293B",
-          bottomTo: "#111827",
-        },
-      ];
-      const palette =
-        paletteOptions[Math.floor(Math.random() * paletteOptions.length)];
-
-      return `
-      <svg width="${WIDTH}" height="${HEIGHT}">
-        <defs>
-          <linearGradient id="sortGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="${palette.sortFrom}"/>
-            <stop offset="100%" stop-color="${palette.sortTo}"/>
-          </linearGradient>
-          <linearGradient id="textGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="${palette.textStops[0]}"/>
-            <stop offset="25%" stop-color="${palette.textStops[1]}"/>
-            <stop offset="50%" stop-color="${palette.textStops[2]}"/>
-            <stop offset="75%" stop-color="${palette.textStops[3]}"/>
-            <stop offset="100%" stop-color="${palette.textStops[4]}"/>
-          </linearGradient>
-          <linearGradient id="bottomGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="${palette.bottomFrom}"/>
-            <stop offset="50%" stop-color="${palette.bottomMid}"/>
-            <stop offset="100%" stop-color="${palette.bottomTo}"/>
-          </linearGradient>
-          <clipPath id="circleClip">
-            <circle cx="120" cy="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2}" r="45" />
-          </clipPath>
-        </defs>
-        <rect x="0" y="0" width="${WIDTH}" height="${titleBandHeight}" fill="rgba(15,23,42,0.96)" />
-        <text x="${WIDTH / 2}" y="${titleY}" fill="#FDE047" font-size="42" font-family="${UI_FONT_FAMILY}" font-weight="900" text-anchor="middle">${escapeXML(title || "NEWS CARD SORT")}</text>
-        <rect x="0" y="${bottomBandTop}" width="${WIDTH}" height="${HEIGHT - bottomBandTop}" fill="#0F172A" />
-        <rect x="0" y="${bottomBandTop + 30}" width="${WIDTH}" height="320" rx="40" fill="#111827" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
-        <text x="${WIDTH / 2}" y="${bodyY}" fill="url(#textGrad)" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="900" text-anchor="middle">
-          ${lines.map((line, i) => `<tspan x="${WIDTH / 2}" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
-        </text>
-       <!-- Footer background -->
-<rect
-  x="0"
-  y="${HEIGHT - bottomSectionHeight}"
-  width="${WIDTH}"
-  height="${bottomSectionHeight}"
-  fill="url(#bottomGrad)"
-/>
-
-<!-- Glass card -->
-<rect
-  x="40"
-  y="${HEIGHT - bottomSectionHeight + 25}"
-  width="${WIDTH - 80}"
-  height="${bottomSectionHeight - 50}"
-  rx="32"
-  fill="rgba(255,255,255,0.08)"
-  stroke="rgba(255,255,255,0.12)"
-  stroke-width="2"
-/>
-
-<!-- Left glow -->
-<circle
-  cx="80"
-  cy="${HEIGHT - bottomSectionHeight + 80}"
-  r="120"
-  fill="rgba(253,224,71,0.05)"
-/>
-
-<!-- Logo -->
-<circle
-  cx="120"
-  cy="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2}"
-  r="45"
-  fill="rgba(255,255,255,0.15)"
-/>
-
-${
-  logoNewBase64
-    ? `
-<image
-  x="70"
-  y="${HEIGHT - bottomSectionHeight + bottomSectionHeight / 2 - 50}"
-  width="100"
-  height="100"
-  preserveAspectRatio="xMidYMid slice"
-  href="data:image/png;base64,${logoNewBase64}"
-  clip-path="url(#circleClip)"
-/>`
-    : ""
-}
-
-<!-- App name -->
-<text
-  x="210"
-  y="${HEIGHT - bottomSectionHeight + 90}"
-  fill="#FFFFFF"
-  font-size="30"
-  font-family="${UI_FONT_FAMILY}"
-  font-weight="900">
-  KHABAR IN SHORT
-</text>
-
-<text
-  x="210"
-  y="${HEIGHT - bottomSectionHeight + 125}"
-  fill="#CBD5E1"
-  font-size="18"
-  font-family="${UI_FONT_FAMILY}">
-  Odisha's Trusted News App
-</text>
-
-<!-- Play Store container -->
-<rect
-  x="${WIDTH - 320}"
-  y="${HEIGHT - bottomSectionHeight + 50}"
-  width="250"
-  height="90"
-  rx="25"
-  fill="rgba(255,255,255,0.10)"
-/>
-
-${
-  downloadBase64
-    ? `
-<image
-  x="${WIDTH - 300}"
-  y="${HEIGHT - bottomSectionHeight + 60}"
-  width="210"
-  height="70"
-  href="data:image/png;base64,${downloadBase64}"
-/>`
-    : ""
-}
-</svg>`;
     },
   },
   {
@@ -302,6 +209,7 @@ ${
       HEIGHT,
       IMAGE_HEIGHT,
       title,
+      titleLines,
       lines,
       downloadBase64,
       logoNewBase64,
@@ -309,7 +217,7 @@ ${
       const bottomSectionHeight = 200;
       return `
       <svg width="${WIDTH}" height="${HEIGHT}">
-        ${templateHeader({ WIDTH, title })}
+        ${templateHeader({ WIDTH, title, titleLines })}
         <defs>
           <radialGradient id="halo" cx="50%" cy="30%" r="50%">
             <stop offset="0%" stop-color="rgba(59,130,246,0.5)"/>
@@ -319,10 +227,17 @@ ${
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#020617" />
         <rect x="40" y="${IMAGE_HEIGHT + 30}" width="1000" height="280" rx="40" fill="rgba(15,23,42,0.92)" />
         <circle cx="900" cy="${IMAGE_HEIGHT + 100}" r="180" fill="url(#halo)" />
-        <text x="80" y="${IMAGE_HEIGHT + 70}" fill="#38BDF8" font-size="28" font-family="${UI_FONT_FAMILY}" font-weight="700">NEW FLASH</text>
-        <text x="80" y="${IMAGE_HEIGHT + 130}" fill="#F8FAFC" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
-          ${lines.map((line, i) => `<tspan x="80" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
-        </text>
+        <text x="80" y="${IMAGE_HEIGHT + 70}" fill="#38BDF8" font-size="28" font-family="${ENGLISH_FONT_FAMILIES.modern}" font-weight="700">NEW FLASH</text>
+        ${renderMultilineText({
+          x: 80,
+          y: IMAGE_HEIGHT + 130,
+          lines,
+          fill: "#F8FAFC",
+          fontFamily: fontForText(lines.join(" "), ENGLISH_FONT_FAMILIES.clean),
+          fontSize: getOptimizedFontSize(lines.join(" "), 50, 38),
+          fontWeight: 800,
+          lineHeight: 56,
+        })}
         <line x1="80" y1="${IMAGE_HEIGHT + 280}" x2="420" y2="${IMAGE_HEIGHT + 280}" stroke="#38BDF8" stroke-width="6" />
         ${newsFooter({ WIDTH, HEIGHT, bottomSectionHeight, downloadBase64, logoNewBase64 })}
       </svg>
@@ -336,6 +251,7 @@ ${
       HEIGHT,
       IMAGE_HEIGHT,
       title,
+      titleLines,
       lines,
       downloadBase64,
       logoNewBase64,
@@ -343,17 +259,24 @@ ${
       const bottomSectionHeight = 200;
       return `
       <svg width="${WIDTH}" height="${HEIGHT}">
-        ${templateHeader({ WIDTH, title })}
+        ${templateHeader({ WIDTH, title, titleLines })}
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#111827" />
         <rect x="60" y="${IMAGE_HEIGHT + 30}" width="960" height="280" rx="40" fill="rgba(15,23,42,0.88)" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
         <rect x="640" y="${IMAGE_HEIGHT + 50}" width="320" height="80" rx="30" fill="#2563EB" />
-        <text x="670" y="${IMAGE_HEIGHT + 90}" fill="#fff" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700">BREAKING</text>
-        <text x="90" y="${IMAGE_HEIGHT + 90}" fill="#E2E8F0" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700">TODAY</text>
-        <text x="90" y="${IMAGE_HEIGHT + 150}" fill="#FFFFFF" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
-          ${lines.map((line, i) => `<tspan x="90" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
-        </text>
+        <text x="670" y="${IMAGE_HEIGHT + 90}" fill="#fff" font-size="24" font-family="${ENGLISH_FONT_FAMILIES.brand}" font-weight="700">BREAKING</text>
+        <text x="90" y="${IMAGE_HEIGHT + 90}" fill="#E2E8F0" font-size="24" font-family="${ENGLISH_FONT_FAMILIES.editorial}" font-weight="700">TODAY</text>
+        ${renderMultilineText({
+          x: 90,
+          y: IMAGE_HEIGHT + 150,
+          lines,
+          fill: "#FFFFFF",
+          fontFamily: fontForText(lines.join(" "), ENGLISH_FONT_FAMILIES.modern),
+          fontSize: getOptimizedFontSize(lines.join(" "), 50, 38),
+          fontWeight: 800,
+          lineHeight: 56,
+        })}
         <rect x="90" y="${IMAGE_HEIGHT + 330}" width="260" height="45" rx="23" fill="#22C55E" />
-        <text x="220" y="${IMAGE_HEIGHT + 358}" fill="#fff" font-size="20" font-family="${UI_FONT_FAMILY}" font-weight="700" text-anchor="middle">INSIDE STORY</text>
+        <text x="220" y="${IMAGE_HEIGHT + 358}" fill="#fff" font-size="20" font-family="${ENGLISH_FONT_FAMILIES.clean}" font-weight="700" text-anchor="middle">INSIDE STORY</text>
         ${newsFooter({ WIDTH, HEIGHT, bottomSectionHeight, downloadBase64, logoNewBase64 })}
       </svg>
       `;
@@ -366,6 +289,7 @@ ${
       HEIGHT,
       IMAGE_HEIGHT,
       title,
+      titleLines,
       lines,
       downloadBase64,
       logoNewBase64,
@@ -373,15 +297,22 @@ ${
       const bottomSectionHeight = 200;
       return `
       <svg width="${WIDTH}" height="${HEIGHT}">
-        ${templateHeader({ WIDTH, title })}
+        ${templateHeader({ WIDTH, title, titleLines })}
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="80" fill="#F97316" />
         <rect x="0" y="${IMAGE_HEIGHT + 80}" width="${WIDTH}" height="80" fill="#0891B2" />
         <rect x="0" y="${IMAGE_HEIGHT + 160}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT - 160}" fill="#0EA5E9" />
-        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#fff" font-size="26" font-family="${UI_FONT_FAMILY}" font-weight="700">SPOTLIGHT</text>
-        <text x="60" y="${IMAGE_HEIGHT + 130}" fill="#fff" font-size="26" font-family="${UI_FONT_FAMILY}" font-weight="700">LATEST HEADLINES</text>
-        <text x="60" y="${IMAGE_HEIGHT + 210}" fill="#0F172A" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
-          ${lines.map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : 60}">${escapeXML(line)}</tspan>`).join("")}
-        </text>
+        <text x="60" y="${IMAGE_HEIGHT + 50}" fill="#fff" font-size="26" font-family="${ENGLISH_FONT_FAMILIES.modern}" font-weight="700">SPOTLIGHT</text>
+        <text x="60" y="${IMAGE_HEIGHT + 130}" fill="#fff" font-size="26" font-family="${ENGLISH_FONT_FAMILIES.condensed}" font-weight="700">LATEST HEADLINES</text>
+        ${renderMultilineText({
+          x: 60,
+          y: IMAGE_HEIGHT + 210,
+          lines,
+          fill: "#0F172A",
+          fontFamily: fontForText(lines.join(" "), ENGLISH_FONT_FAMILIES.slab),
+          fontSize: getOptimizedFontSize(lines.join(" "), 50, 38),
+          fontWeight: 800,
+          lineHeight: 56,
+        })}
         <circle cx="980" cy="${IMAGE_HEIGHT + 100}" r="70" fill="#F8FAFC" opacity="0.18" />
         ${newsFooter({ WIDTH, HEIGHT, bottomSectionHeight, downloadBase64, logoNewBase64 })}
       </svg>
@@ -395,6 +326,7 @@ ${
       HEIGHT,
       IMAGE_HEIGHT,
       title,
+      titleLines,
       lines,
       downloadBase64,
       logoNewBase64,
@@ -402,14 +334,21 @@ ${
       const bottomSectionHeight = 200;
       return `
       <svg width="${WIDTH}" height="${HEIGHT}">
-        ${templateHeader({ WIDTH, title })}
+        ${templateHeader({ WIDTH, title, titleLines })}
         <rect x="0" y="${IMAGE_HEIGHT}" width="${WIDTH}" height="${HEIGHT - IMAGE_HEIGHT}" fill="#F8FAFC" />
         <rect x="40" y="${IMAGE_HEIGHT + 20}" width="1000" height="300" rx="40" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
         <rect x="60" y="${IMAGE_HEIGHT + 30}" width="240" height="50" rx="30" fill="#8B5CF6" />
-        <text x="180" y="${IMAGE_HEIGHT + 65}" fill="#fff" font-size="24" font-family="${UI_FONT_FAMILY}" font-weight="700" text-anchor="middle">TOP STORY</text>
-        <text x="60" y="${IMAGE_HEIGHT + 120}" fill="#111827" font-size="48" font-family="${UI_FONT_FAMILY}" font-weight="800">
-          ${lines.map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : 58}">${escapeXML(line)}</tspan>`).join("")}
-        </text>
+        <text x="180" y="${IMAGE_HEIGHT + 65}" fill="#fff" font-size="24" font-family="${ENGLISH_FONT_FAMILIES.slab}" font-weight="700" text-anchor="middle">TOP STORY</text>
+        ${renderMultilineText({
+          x: 60,
+          y: IMAGE_HEIGHT + 120,
+          lines,
+          fill: "#111827",
+          fontFamily: fontForText(lines.join(" "), ENGLISH_FONT_FAMILIES.editorial),
+          fontSize: getOptimizedFontSize(lines.join(" "), 50, 38),
+          fontWeight: 800,
+          lineHeight: 56,
+        })}
         <line x1="60" y1="${IMAGE_HEIGHT + 280}" x2="380" y2="${IMAGE_HEIGHT + 280}" stroke="#A855F7" stroke-width="8" />
         ${newsFooter({ WIDTH, HEIGHT, bottomSectionHeight, downloadBase64, logoNewBase64 })}
       </svg>
@@ -446,7 +385,15 @@ async function generateMobilePost({
   });
 
   const imageBuffer = Buffer.from(response.data);
-  const lines = wrapText(text, 40);
+  const titleText = title || description || "NEWS CARD SORT";
+  const bodyText = text || description || titleText;
+  const lines = wrapText(bodyText, 34, 4, true);
+  const titleLines = wrapText(
+    titleText,
+    TITLE_MAX_CHARS,
+    TITLE_MAX_LINES,
+    true,
+  );
 
   // Load logos
   let downloadBase64 = "";
@@ -477,7 +424,8 @@ async function generateMobilePost({
     HEIGHT,
     IMAGE_HEIGHT,
     lines,
-    title,
+    title: titleText,
+    titleLines,
     description,
     downloadBase64,
     logoNewBase64,
@@ -559,14 +507,18 @@ async function generateAllMobilePosts({
   }
 }
 
-function wrapText(text, maxChars) {
-  const words = text.split(" ");
+function wrapText(text, maxChars, maxLines = 4, padToFullLines = false) {
+  const words = String(text || "")
+    .split(" ")
+    .filter(Boolean);
   const lines = [];
   let line = "";
 
-  for (const word of words) {
+  for (const word of words.flatMap((word) => splitLongWord(word, maxChars))) {
     if ((line + word).length > maxChars) {
-      lines.push(line.trim());
+      if (line.trim()) {
+        lines.push(line.trim());
+      }
       line = word + " ";
     } else {
       line += word + " ";
@@ -577,7 +529,33 @@ function wrapText(text, maxChars) {
     lines.push(line.trim());
   }
 
-  return lines.slice(0, 4);
+  const truncated = lines.slice(0, maxLines);
+
+  if (padToFullLines) {
+    while (truncated.length < maxLines) {
+      truncated.push("");
+    }
+  }
+
+  return truncated;
+}
+
+function splitLongWord(word, maxChars) {
+  if (word.length <= maxChars) {
+    return [word];
+  }
+
+  const chunks = [];
+  for (let i = 0; i < word.length; i += maxChars) {
+    chunks.push(word.slice(i, i + maxChars));
+  }
+  return chunks;
+}
+
+function fitTextAttrs(line) {
+  return line && !line.includes(" ") && line.length >= TITLE_MAX_CHARS
+    ? ` textLength="${TITLE_MAX_WIDTH}" lengthAdjust="spacingAndGlyphs"`
+    : "";
 }
 
 function escapeXML(str) {
