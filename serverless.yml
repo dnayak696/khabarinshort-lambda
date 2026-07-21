@@ -27,6 +27,10 @@ provider:
             - lambda:InvokeFunction
           Resource:
             - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${sls:stage}-postCreator
+        - Effect: Allow
+          Action:
+            - bedrock:InvokeModel
+          Resource: "*"
 
 package:
   individually: true
@@ -111,6 +115,9 @@ functions:
       POST_CREATOR_FUNCTION_NAME: ${env:POST_CREATOR_FUNCTION_NAME, "${self:service}-${sls:stage}-postCreator"}
       FIREBASE_SERVICE_ACCOUNT_BASE64: ${env:FIREBASE_SERVICE_ACCOUNT_BASE64, ""}
       FIREBASE_SERVICE_ACCOUNT_JSON: ${env:FIREBASE_SERVICE_ACCOUNT_JSON, ""}
+      BEDROCK_MODEL_ID: ${env:BEDROCK_MODEL_ID, "google.gemma-3-12b-it"}
+      BEDROCK_MAX_OUTPUT_TOKENS: ${env:BEDROCK_MAX_OUTPUT_TOKENS, "300"}
+      BEDROCK_TEMPERATURE: ${env:BEDROCK_TEMPERATURE, "0.2"}
     package:
       exclude:
         - scrapper/dharirti.js

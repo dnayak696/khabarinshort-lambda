@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "aws-sdk": "^2.1692.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.787.0",
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
     "firebase-admin": "^13.0.2",
