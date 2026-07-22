@@ -54,11 +54,22 @@ exports.handler = async () => {
   const prevLinks = new Set(
     (previousData.articles || []).map((a) => a.postSourceLink),
   );
-
   const newArticles = deduped.filter(
     (article) => !prevLinks.has(article.postSourceLink),
   );
 
+  const newsList = deduped.map((article) => {
+    if (!prevLinks.has(article.postSourceLink)) {
+      return article;
+    } else {
+      return (
+        previousData.articles.find(
+          (a) => a.postSourceLink === article.postSourceLink,
+        ) || article
+      );
+    }
+  });
+  const newsMediaList = [];
   for (const article of newArticles) {
     const title = toPlainText(article.title);
     const sourceText = toPlainText(
@@ -81,24 +92,35 @@ exports.handler = async () => {
     article.odiaSummary = summaryResult.summary;
     article.odiaCaption = summaryResult.caption;
     article.odiaDescription = summaryResult.description;
-    console.log(
-      `Summarized article caption: ${article.odiaCaption}\n  summary: ${article.odiaSummary}\n  description: ${article.odiaDescription}`,
-    );
+
+    // Add to media list for social post generation
+    newsMediaList.push({
+      id: article.id,
+      title: article.odiaTitle,
+      summary: article.odiaSummary,
+      caption: article.odiaCaption,
+      description: article.odiaDescription,
+      postImageUrl: article.postImageUrl || article.imageUrl,
+      postSourceLink: article.postSourceLink,
+      postSourceName: article.postSourceName || article.source,
+      group: article.group,
+    });
+
     // Update inside deduped list
-    const index = deduped.findIndex(
+    const index = newsList.findIndex(
       (a) => a.postSourceLink === article.postSourceLink,
     );
     if (index !== -1) {
-      deduped[index].odiaTitle = title;
-      deduped[index].odiaSummary = summaryResult.summary;
-      deduped[index].odiaCaption = summaryResult.caption;
-      deduped[index].odiaDescription = summaryResult.description;
+      newsList[index].odiaTitle = title;
+      newsList[index].odiaSummary = summaryResult.summary;
+      newsList[index].odiaCaption = summaryResult.caption;
+      newsList[index].odiaDescription = summaryResult.description;
     }
   }
 
   // If new articles exist → update file + notify
   if (newArticles.length > 0) {
-    // Save updated deduped data
+    // Save updated merged data so previously summarized server records are retained.
     await s3
       .putObject({
         Bucket: BUCKET,
@@ -106,7 +128,7 @@ exports.handler = async () => {
         Body: JSON.stringify(
           {
             updatedAt: new Date().toISOString(),
-            articles: deduped,
+            articles: newsList,
           },
           null,
           2,
@@ -119,7 +141,7 @@ exports.handler = async () => {
     await invalidateCache(process.env.CLOUDFRONT_DISTRIBUTION_ID, ["/*"]);
 
     // Create social media post images for all new articles.
-    await invokePostCreator(newArticles);
+    await invokePostCreator(newsMediaList);
 
     // Send notifications & send post on social media to get more engagement
     for (const article of newArticles.slice(0, 1)) {
@@ -134,7 +156,7 @@ exports.handler = async () => {
   return {
     statusCode: 200,
     body: JSON.stringify({
-      total: deduped.length,
+      total: newsList.length,
       newArticles: newArticles.length,
     }),
   };
@@ -415,20 +437,16 @@ const sendFCMNotification = async (article) => {
     article.odiaSummary || article.summary || article.description,
     200,
   );
-  const image = truncateText(article.postImageUrl || article.imageUrl, 1000);
+  const image = article.imageUrl;
   const message = {
     notification: {
       title: title || "Khabar In Short",
       body: body || title || "New article published",
+      image: image || undefined,
     },
     data: toFcmData(article),
     topic: NOTIFICATION_TOPIC,
   };
-
-  if (image) {
-    message.notification.image = image;
-  }
-
   try {
     return await app.messaging().send(message);
   } catch (error) {
