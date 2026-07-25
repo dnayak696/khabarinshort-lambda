@@ -9,6 +9,7 @@ const URL = "https://www.dharitri.com/";
 const ARTICLE_CARD_SELECTOR = "article.post";
 const BUCKET = process.env.NEWS_BUCKET || "khabarinshort";
 const PREFIX = process.env.DHARITRI_KEY || "dharitri.json";
+const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 const AXIOS_CONFIG = {
   timeout: 15000,
   headers: { "User-Agent": "Mozilla/5.0" },
@@ -37,6 +38,16 @@ async function scrapeDharitriPost(postUrl) {
 
     const title = cleanTitle($("h1.my_menu").text());
     const postedAt = $("time.entry-date.published").attr("datetime");
+    const parsedPostedAt = new Date(postedAt);
+
+    if (!postedAt || Number.isNaN(parsedPostedAt.getTime())) {
+      return null;
+    }
+
+    if (Date.now() - parsedPostedAt.getTime() > ONE_DAY_IN_MS) {
+      return null;
+    }
+
     // Updated image selector: fallback to first img if figure fails
     const postImageUrl = $(".post-thumbnail img").attr("src");
 

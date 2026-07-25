@@ -235,11 +235,13 @@ async function summarizeWithBedrock(text) {
     `Return ONLY one valid JSON object with exactly these three keys: summary, caption, description.\n` +
     `Do not include any commentary, markdown, explanation, or extra keys.\n` +
     `Rules:\n` +
-    `- summary: one short Odia summary in 1-2 sentences, factual and concise. Write fully in Odia.\n` +
+    `- summary: one short Odia summary in 4-5 sentences, factual and concise. Write fully in Odia.\n` +
     `- caption: one short social-media caption for a mobile post image, catchy and relevant, fully in Odia.\n` +
     `- description: one short description for the post image, 1 sentence only, fully in Odia.\n` +
     `- Do not mix in Hindi, English, or other languages. Keep the response entirely in Odia script and vocabulary.\n` +
     `- Use plain text only. No emojis, no hashtags, no quotes around values.\n` +
+    `- If the article is too short, repeat the content in Odia to fill the fields.\n` +
+    `- Use natural Odia vocabulary and spelling.\n` +
     `Example format: {"summary":"...","caption":"...","description":"..."}\n\n` +
     `Article Text:\n${text}`;
 
@@ -274,22 +276,22 @@ async function summarizeWithBedrock(text) {
     if (!parsed) {
       const cleanText = stripJsonFieldLabel(normalizedBody);
       return {
-        summary: toPlainText(cleanText).slice(0, 300),
-        caption: toPlainText(cleanText).slice(0, 200),
-        description: toPlainText(cleanText).slice(0, 300),
+        summary: toPlainText(cleanText),
+        caption: toPlainText(cleanText),
+        description: toPlainText(cleanText),
       };
     }
 
     const generatedText = extractBedrockText(parsed, normalizedBody);
 
     return {
-      summary: toPlainText(parsed.summary || generatedText).slice(0, 300),
+      summary: toPlainText(parsed.summary || generatedText),
       caption: toPlainText(
         parsed.caption || parsed.title || parsed.summary || generatedText,
-      ).slice(0, 2200),
+      ),
       description: toPlainText(
         parsed.description || parsed.summary || generatedText,
-      ).slice(0, 300),
+      ),
     };
   } catch (err) {
     console.error("Bedrock summarization failed:", err.message || err);
