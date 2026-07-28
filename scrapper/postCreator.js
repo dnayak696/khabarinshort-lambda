@@ -304,7 +304,12 @@ function buildCaption(article) {
   if (article.title) parts.push(article.title);
   if (article.description) parts.push(article.description);
   if (article.postSourceLink)
-    parts.push(`Read more: ${article.postSourceLink}`);
+    parts.push(
+      `ଆପ୍ ଡାଉନଲୋଡ୍ କରନ୍ତୁ: ` +
+        `https://play.google.com/store/apps/details?id=com.ksmobile`,
+    );
+
+  parts.push(`Read more: ${article.postSourceLink}`);
   return parts.join("\n\n");
 }
 
