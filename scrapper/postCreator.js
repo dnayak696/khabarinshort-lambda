@@ -9,11 +9,11 @@ const s3 = new AWS.S3();
 const BUCKET_NAME = process.env.POST_IMAGES_BUCKET || "khabarinshort";
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || "";
 
-const FACEBOOK_PAGE_ID = process.env.FACEBOOK_PAGE_ID;
-const FACEBOOK_ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
-const INSTAGRAM_ACCOUNT_ID = process.env.INSTAGRAM_ACCOUNT_ID;
-const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
-const THREADS_API_TOKEN = process.env.THREADS_API_TOKEN;
+// const FACEBOOK_PAGE_ID = process.env.FACEBOOK_PAGE_ID;
+// const FACEBOOK_ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
+// const INSTAGRAM_ACCOUNT_ID = process.env.INSTAGRAM_ACCOUNT_ID;
+// const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
+// const THREADS_API_TOKEN = process.env.THREADS_API_TOKEN;
 
 exports.handler = async (event) => {
   const body = parseBody(event);
@@ -62,12 +62,18 @@ exports.handler = async (event) => {
       });
 
       const uploadedUrl = await uploadImageToS3(localOutputPath, s3Key);
-      // const facebook = await createFacebookDraft({
-      //   pageId: FACEBOOK_PAGE_ID,
-      //   accessToken: FACEBOOK_ACCESS_TOKEN,
-      //   imageUrl: uploadedUrl,
-      //   caption,
-      // });
+      const config = {
+        caption: article.caption,
+        image_url: uploadedUrl,
+      };
+      const page = pageList.find((page) => page.group === article.group);
+      const mainPage = pageList.find((page) => page.group === "general");
+      if (page) {
+        await publishFacebookMedia(page, config);
+      }
+
+      await publishFacebookMedia(mainPage, config);
+
       // const instagram = await createInstagramMediaContainer({
       //   instagramAccountId: INSTAGRAM_ACCOUNT_ID,
       //   accessToken: INSTAGRAM_ACCESS_TOKEN,
@@ -83,7 +89,7 @@ exports.handler = async (event) => {
       results.push({
         articleId,
         cloudFrontUrl: uploadedUrl,
-        // facebook,
+        facebook,
         // instagram,
         // threads,
       });
@@ -102,6 +108,36 @@ exports.handler = async (event) => {
     body: JSON.stringify({ results }, null, 2),
   };
 };
+
+async function publishFacebookMedia(page, config) {
+  const url = `https://graph.facebook.com/v25.0/${page.id}/media`;
+
+  try {
+    const response = await axios.post(url, null, {
+      // Axios injects these into the URL as key=value pairs automatically
+      params: {
+        caption: config.caption,
+        access_token: page.access_token,
+        image_url: config.image_url,
+        published: true,
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log("✅ Post Published Successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    // Axios captures detailed API error responses here
+    if (error.response) {
+      console.error("❌ Graph API Error Data:", error.response.data);
+    } else {
+      console.error("❌ Request Setup Error:", error.message);
+    }
+    throw error;
+  }
+}
 
 function parseBody(event = {}) {
   if (Array.isArray(event.articles)) {
@@ -138,6 +174,52 @@ function getFirstOdiaSentence(value) {
   return text.split(/\r?\n/)[0].trim();
 }
 
+async function publishFacebookPostForArticle({ article, imageUrl, caption }) {
+  const articleGroup = getArticleGroupName(article);
+
+  if (!articleGroup) {
+    return { skipped: true, reason: "Article is missing group name" };
+  }
+
+  const page = await findFacebookPageByGroup(articleGroup);
+
+  if (!page) {
+    return {
+      skipped: true,
+      reason: `No Facebook page found for group "${articleGroup}"`,
+    };
+  }
+
+  try {
+    return await createFacebookPost({
+      pageId: getFacebookPageId(page),
+      accessToken: getFacebookPageAccessToken(page),
+      imageUrl,
+      caption,
+    });
+  } catch (error) {
+    return {
+      error: error.message || String(error),
+      pageId: getFacebookPageId(page),
+      group: getFacebookPageGroupName(page),
+    };
+  }
+}
+
+async function findFacebookPageByGroup(group) {
+  const normalizedGroup = normalizeGroupName(group);
+  const pages = await getFacebookPagesByGroup(group);
+
+  return pages.find(
+    (page) =>
+      normalizeGroupName(getFacebookPageGroupName(page)) === normalizedGroup,
+  );
+}
+
+function normalizeGroupName(value) {
+  return toPlainText(value).toLowerCase();
+}
+
 async function uploadImageToS3(localPath, key) {
   const fileBody = await fs.readFile(localPath);
 
@@ -157,7 +239,7 @@ async function uploadImageToS3(localPath, key) {
   return `https://${CLOUDFRONT_DOMAIN}/${key}`;
 }
 
-async function createFacebookDraft({ pageId, accessToken, imageUrl, caption }) {
+async function createFacebookPost({ pageId, accessToken, imageUrl, caption }) {
   if (!pageId || !accessToken) {
     return { skipped: true, reason: "Missing Facebook page credentials" };
   }
@@ -166,7 +248,7 @@ async function createFacebookDraft({ pageId, accessToken, imageUrl, caption }) {
   const params = new URLSearchParams({
     url: imageUrl,
     caption,
-    published: "false",
+    published: "true",
     access_token: accessToken,
   });
 
@@ -244,3 +326,54 @@ async function cleanupTempFile(filePath) {
     // ignore missing temp file cleanup errors
   }
 }
+
+const pageList = [
+  {
+    access_token:
+      "EAGA60BdmGbIBSPilyHqRaEHIZCfd4HdXrJbMMe6bnhX3XgGtmvL4EMQQ78rEC3ggTErImgX1kIGgixZBM9yZAm4WmaWjfWVqZAMAY8MusKl6RDSm3X1r87FaHW7dHPY9WkGaOpSZCQ3PzvShjyvYIjY2DgaFOFZBNvyGexqAZBeBgIVxzvwP86M6AHBh1w0ihRZBKucnvqEwC3eggovBj7fMH7NVhs2omQmSu1uOu4EZD",
+    category: "News & media website",
+    category_list: [
+      {
+        id: "2709",
+        name: "News & media website",
+      },
+      {
+        id: "2233",
+        name: "Media/news company",
+      },
+    ],
+    name: "Khabar In short Jobs",
+    group: "jobs",
+    id: "1312385301948534",
+    tasks: [
+      "MODERATE",
+      "MESSAGING",
+      "ANALYZE",
+      "ADVERTISE",
+      "CREATE_CONTENT",
+      "MANAGE",
+    ],
+  },
+  {
+    access_token:
+      "EAGA60BdmGbIBSPrbQVdQAsWQZBm3gM8m45hSpihCNr5hMZBZBpwlhzPam7V393JkgQIeB7dstQmQ5vtchUj02viKD1ebOGsZBwVibaAt06ZALKiz8fnPszJxS4D1eXFWNkJiM2Af23NSotXTWORgyRPsmZCA32K35usDMdALeXWY9PinfKBuchfX6T7ldGKVu5IHiHyZBLQkYlETzT08cmstx9yj1ZCDZCf1pp8cZCqQZDZD",
+    category: "News & media website",
+    category_list: [
+      {
+        id: "2709",
+        name: "News & media website",
+      },
+    ],
+    name: "Khabar in short",
+    group: "general",
+    id: "106106792088947",
+    tasks: [
+      "MODERATE",
+      "MESSAGING",
+      "ANALYZE",
+      "ADVERTISE",
+      "CREATE_CONTENT",
+      "MANAGE",
+    ],
+  },
+];
