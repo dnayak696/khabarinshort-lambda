@@ -330,7 +330,7 @@ async function cleanupTempFile(filePath) {
 const pageList = [
   {
     access_token:
-      "EAGA60BdmGbIBSPilyHqRaEHIZCfd4HdXrJbMMe6bnhX3XgGtmvL4EMQQ78rEC3ggTErImgX1kIGgixZBM9yZAm4WmaWjfWVqZAMAY8MusKl6RDSm3X1r87FaHW7dHPY9WkGaOpSZCQ3PzvShjyvYIjY2DgaFOFZBNvyGexqAZBeBgIVxzvwP86M6AHBh1w0ihRZBKucnvqEwC3eggovBj7fMH7NVhs2omQmSu1uOu4EZD",
+      "EAGA60BdmGbIBSHfv7ARrdq7BR7Bu39L08nmWHgWvFv80hdbXK1ZBMDsxyDWex1170LLwjiJ3MVaCvPsyDKZCovAsBeStdb3EDbOEOH1XnYovsOJQoLMbMpWtTNXtPBR56PgaRHcW2BzcZAa1jPYeXmLtjZBImfIWkUvYuyBeH5TqZBB8zEOtfGIDb2OZBwSKjKKIGG",
     category: "News & media website",
     category_list: [
       {
@@ -343,7 +343,6 @@ const pageList = [
       },
     ],
     name: "Khabar In short Jobs",
-    group: "jobs",
     id: "1312385301948534",
     tasks: [
       "MODERATE",
@@ -356,7 +355,7 @@ const pageList = [
   },
   {
     access_token:
-      "EAGA60BdmGbIBSPrbQVdQAsWQZBm3gM8m45hSpihCNr5hMZBZBpwlhzPam7V393JkgQIeB7dstQmQ5vtchUj02viKD1ebOGsZBwVibaAt06ZALKiz8fnPszJxS4D1eXFWNkJiM2Af23NSotXTWORgyRPsmZCA32K35usDMdALeXWY9PinfKBuchfX6T7ldGKVu5IHiHyZBLQkYlETzT08cmstx9yj1ZCDZCf1pp8cZCqQZDZD",
+      "EAGA60BdmGbIBSPN3ZBVpDTDDWxHDySjfaJJPyo43xFKscZACZCVp93x1frD1R6ESznyOvt6isEtZCFcv5h6Kewn40ANHOoKDwdCpjJwWY2uMajrnHuZCIhBMZBqyXrhMOpr41jbvhvL73jZAxCZAwzhyhrwpcyIxbA7gcuTzrKCqwV3ZAt4PZB52P6uenSZArCQrXQveQYZD",
     category: "News & media website",
     category_list: [
       {
@@ -365,7 +364,6 @@ const pageList = [
       },
     ],
     name: "Khabar in short",
-    group: "general",
     id: "106106792088947",
     tasks: [
       "MODERATE",
