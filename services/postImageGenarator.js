@@ -12,6 +12,7 @@ const TITLE_MAX_CHARS = 22;
 const TITLE_MAX_LINES = 3;
 const HEADER_PADDING_X = 72;
 const HEADER_PADDING_Y = 24;
+const HEADER_HEIGHT = 200;
 const TITLE_MAX_WIDTH = 1080 - HEADER_PADDING_X * 2;
 const ENGLISH_FONT_FAMILIES = {
   robotoBlack:
@@ -147,20 +148,67 @@ const newsFooter = ({
 const templateHeader = ({ WIDTH, title, titleLines }) => {
   const headerFontSize = getOptimizedFontSize(title, 54, 44);
   const headerLineHeight = Math.max(48, Math.round(headerFontSize * 1.05));
-  const headerHeight = 200;
+  const headerContentWidth = WIDTH - HEADER_PADDING_X * 2;
+  const visibleTitleLines = titleLines.filter((line) => line.trim());
+  const centeredTitleLines = visibleTitleLines.length
+    ? visibleTitleLines
+    : [""];
+  const titleBlockHeight =
+    (centeredTitleLines.length - 1) * headerLineHeight + headerFontSize;
+  const titleStartY = Math.round(
+    HEADER_PADDING_Y +
+      (HEADER_HEIGHT - HEADER_PADDING_Y * 2 - titleBlockHeight) / 2 +
+      headerFontSize * 0.78,
+  );
+  const centerX = WIDTH / 2;
 
   return `
-    <rect x="0" y="0" width="${WIDTH}" height="${headerHeight}" fill="#FDE047" />
-    <rect x="${HEADER_PADDING_X / 2}" y="${HEADER_PADDING_Y}" width="${WIDTH - HEADER_PADDING_X}" height="${headerHeight - HEADER_PADDING_Y * 2}" rx="18" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="3" />
-    <text x="${WIDTH / 2}" y="76" fill="#000000" font-size="${headerFontSize}" font-family="${fontForText(title, ENGLISH_FONT_FAMILIES.brand)}" font-weight="900" text-anchor="middle">
-      ${titleLines
-        .map(
-          (line, i) =>
-            `<tspan x="${WIDTH / 2}" dy="${i === 0 ? 0 : headerLineHeight}"${fitTextAttrs(line)}>${escapeXML(line || "")}</tspan>`,
-        )
-        .join("")}
-    </text>
-  `;
+<g>
+  <rect
+    width="${WIDTH}"
+    height="${HEADER_HEIGHT}"
+    fill="#FDE047"
+  />
+
+  <rect
+    x="${HEADER_PADDING_X}"
+    y="${HEADER_PADDING_Y}"
+    width="${headerContentWidth}"
+    height="${HEADER_HEIGHT - HEADER_PADDING_Y * 2}"
+    rx="24"
+    fill="#FFFFFF"
+    fill-opacity="0.18"
+    stroke="#000000"
+    stroke-opacity="0.15"
+    stroke-width="3"
+  />
+
+  <text
+    x="${centerX}"
+    y="${titleStartY}"
+    fill="#000"
+    font-size="${headerFontSize}"
+    font-family="${fontForText(title, ENGLISH_FONT_FAMILIES.brand)}"
+    font-weight="900"
+    text-anchor="middle"
+    letter-spacing="0.5"
+  >
+    ${centeredTitleLines
+      .map(
+        (line, i) => `
+          <tspan
+            x="${centerX}"
+            dy="${i === 0 ? 0 : headerLineHeight}"
+            ${fitTextAttrs(line, headerContentWidth)}
+          >
+            ${escapeXML(line || "")}
+          </tspan>
+        `,
+      )
+      .join("")}
+  </text>
+</g>
+`;
 };
 
 const templates = [
@@ -390,6 +438,7 @@ async function generateMobilePost({
   const WIDTH = 1080;
   const HEIGHT = 1350;
   const IMAGE_HEIGHT = 850;
+  const visibleImageHeight = IMAGE_HEIGHT - HEADER_HEIGHT;
 
   const response = await axios.get(imageUrl, {
     responseType: "arraybuffer",
@@ -465,13 +514,13 @@ async function generateMobilePost({
     .composite([
       {
         input: await sharp(imageBuffer)
-          .resize(WIDTH, IMAGE_HEIGHT, {
+          .resize(WIDTH, visibleImageHeight, {
             fit: "contain",
             background: "#111827",
             position: "centre",
           })
           .toBuffer(),
-        top: 0,
+        top: HEADER_HEIGHT,
         left: 0,
       },
       {
@@ -563,9 +612,9 @@ function splitLongWord(word, maxChars) {
   return chunks;
 }
 
-function fitTextAttrs(line) {
+function fitTextAttrs(line, maxWidth = TITLE_MAX_WIDTH) {
   return line && !line.includes(" ") && line.length >= TITLE_MAX_CHARS
-    ? ` textLength="${TITLE_MAX_WIDTH}" lengthAdjust="spacingAndGlyphs"`
+    ? ` textLength="${maxWidth}" lengthAdjust="spacingAndGlyphs"`
     : "";
 }
 
