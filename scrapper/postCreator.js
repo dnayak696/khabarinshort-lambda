@@ -68,9 +68,9 @@ exports.handler = async (event) => {
       };
       const page = pageList.find((page) => page.group === article.group);
       const mainPage = pageList.find((page) => page.group === "general");
-      if (page) {
-        await publishFacebookMedia(page, config);
-      }
+      // if (page) {
+      //   await publishFacebookMedia(page, config);
+      // }
 
       await publishFacebookMedia(mainPage, config);
 
@@ -110,19 +110,17 @@ exports.handler = async (event) => {
 };
 
 async function publishFacebookMedia(page, config) {
-  const url = `https://graph.facebook.com/v25.0/${page.id}/media`;
+  const url = `https://graph.facebook.com/v25.0/${page.id}/photos`;
 
   try {
+    console.log("Image URL:", config.image_url);
     const response = await axios.post(url, null, {
       // Axios injects these into the URL as key=value pairs automatically
       params: {
-        caption: config.caption,
+        message: config.caption,
         access_token: page.access_token,
-        image_url: config.image_url,
+        url: config.image_url,
         published: true,
-      },
-      headers: {
-        "Content-Type": "application/json",
       },
     });
 
@@ -342,6 +340,7 @@ const pageList = [
         name: "Media/news company",
       },
     ],
+    group: "jobs",
     name: "Khabar In short Jobs",
     id: "1312385301948534",
     tasks: [
@@ -363,6 +362,7 @@ const pageList = [
         name: "News & media website",
       },
     ],
+    group: "general",
     name: "Khabar in short",
     id: "106106792088947",
     tasks: [
