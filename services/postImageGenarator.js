@@ -10,7 +10,9 @@ const UI_FONT_FAMILY = `${ODIA_FONT_FAMILY}, 'Noto Sans', Arial, sans-serif`;
 const ODIA_TEXT_PATTERN = /[\u0B00-\u0B7F]/;
 const TITLE_MAX_CHARS = 22;
 const TITLE_MAX_LINES = 3;
-const TITLE_MAX_WIDTH = 900;
+const HEADER_PADDING_X = 72;
+const HEADER_PADDING_Y = 24;
+const TITLE_MAX_WIDTH = 1080 - HEADER_PADDING_X * 2;
 const ENGLISH_FONT_FAMILIES = {
   robotoBlack:
     "'Roboto Black', Roboto, 'Arial Black', Impact, 'Noto Sans', Arial, sans-serif",
@@ -143,15 +145,18 @@ const newsFooter = ({
 `;
 
 const templateHeader = ({ WIDTH, title, titleLines }) => {
-const headerFontSize = getOptimizedFontSize(title, 42, 30);
-      const headerLineHeight = Math.max(36, Math.round(headerFontSize * 0.95));
+  const headerFontSize = getOptimizedFontSize(title, 54, 44);
+  const headerLineHeight = Math.max(48, Math.round(headerFontSize * 1.05));
+  const headerHeight = 200;
 
   return `
-    <rect x="0" y="0" width="${WIDTH}" height="180" fill="rgba(15,23,42,0.96)" />
-    <text x="${WIDTH / 2}" y="96" fill="#FDE047" font-size="${headerFontSize}" font-family="${fontForText(title, ENGLISH_FONT_FAMILIES.brand)}" font-weight="900" text-anchor="middle">
+    <rect x="0" y="0" width="${WIDTH}" height="${headerHeight}" fill="#FDE047" />
+    <rect x="${HEADER_PADDING_X / 2}" y="${HEADER_PADDING_Y}" width="${WIDTH - HEADER_PADDING_X}" height="${headerHeight - HEADER_PADDING_Y * 2}" rx="18" fill="rgba(255,255,255,0.18)" stroke="rgba(0,0,0,0.18)" stroke-width="3" />
+    <text x="${WIDTH / 2}" y="76" fill="#000000" font-size="${headerFontSize}" font-family="${fontForText(title, ENGLISH_FONT_FAMILIES.brand)}" font-weight="900" text-anchor="middle">
       ${titleLines
         .map(
-          (line, i) => `<tspan x="${WIDTH / 2}" dy="${i === 0 ? 0 : headerLineHeight}"${fitTextAttrs(line)}>${escapeXML(line || "")}</tspan>`,
+          (line, i) =>
+            `<tspan x="${WIDTH / 2}" dy="${i === 0 ? 0 : headerLineHeight}"${fitTextAttrs(line)}>${escapeXML(line || "")}</tspan>`,
         )
         .join("")}
     </text>
@@ -270,7 +275,10 @@ const templates = [
           y: IMAGE_HEIGHT + 150,
           lines,
           fill: "#FFFFFF",
-          fontFamily: fontForText(lines.join(" "), ENGLISH_FONT_FAMILIES.modern),
+          fontFamily: fontForText(
+            lines.join(" "),
+            ENGLISH_FONT_FAMILIES.modern,
+          ),
           fontSize: getOptimizedFontSize(lines.join(" "), 50, 38),
           fontWeight: 800,
           lineHeight: 56,
@@ -344,7 +352,10 @@ const templates = [
           y: IMAGE_HEIGHT + 120,
           lines,
           fill: "#111827",
-          fontFamily: fontForText(lines.join(" "), ENGLISH_FONT_FAMILIES.editorial),
+          fontFamily: fontForText(
+            lines.join(" "),
+            ENGLISH_FONT_FAMILIES.editorial,
+          ),
           fontSize: getOptimizedFontSize(lines.join(" "), 50, 38),
           fontWeight: 800,
           lineHeight: 56,
