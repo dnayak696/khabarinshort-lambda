@@ -43,6 +43,7 @@ exports.handler = async (event) => {
     const localFileName = `${slugify(articleId)}-${Date.now()}.jpg`;
     const localOutputPath = path.join("/tmp", localFileName);
     const s3Key = `social-post-images/${localFileName}`;
+    let uploadedS3Key = "";
 
     if (!imageUrl) {
       results.push({
@@ -62,6 +63,7 @@ exports.handler = async (event) => {
       });
 
       const uploadedUrl = await uploadImageToS3(localOutputPath, s3Key);
+      uploadedS3Key = s3Key;
       const config = {
         caption: article.caption,
         image_url: uploadedUrl,
@@ -72,7 +74,9 @@ exports.handler = async (event) => {
       //   await publishFacebookMedia(page, config);
       // }
 
-      await publishFacebookMedia(mainPage, config);
+      const facebook = await publishFacebookMedia(mainPage, config);
+      await deleteImageFromS3(uploadedS3Key);
+      uploadedS3Key = "";
 
       // const instagram = await createInstagramMediaContainer({
       //   instagramAccountId: INSTAGRAM_ACCOUNT_ID,
@@ -89,6 +93,7 @@ exports.handler = async (event) => {
       results.push({
         articleId,
         cloudFrontUrl: uploadedUrl,
+        s3ImageDeleted: true,
         facebook,
         // instagram,
         // threads,
@@ -99,6 +104,9 @@ exports.handler = async (event) => {
         error: error.message || String(error),
       });
     } finally {
+      if (uploadedS3Key) {
+        await cleanupUploadedImage(uploadedS3Key);
+      }
       await cleanupTempFile(localOutputPath);
     }
   }
@@ -237,6 +245,23 @@ async function uploadImageToS3(localPath, key) {
   return `https://${CLOUDFRONT_DOMAIN}/${key}`;
 }
 
+async function deleteImageFromS3(key) {
+  await s3
+    .deleteObject({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    })
+    .promise();
+}
+
+async function cleanupUploadedImage(key) {
+  try {
+    await deleteImageFromS3(key);
+  } catch (err) {
+    console.warn(`Failed to delete uploaded S3 image ${key}:`, err.message);
+  }
+}
+
 async function createFacebookPost({ pageId, accessToken, imageUrl, caption }) {
   if (!pageId || !accessToken) {
     return { skipped: true, reason: "Missing Facebook page credentials" };
@@ -303,12 +328,10 @@ function buildCaption(article) {
   if (article.caption) return article.caption;
   if (article.title) parts.push(article.title);
   if (article.description) parts.push(article.description);
-  if (article.postSourceLink)
-    parts.push(
-      `ଆପ୍ ଡାଉନଲୋଡ୍ କରନ୍ତୁ: ` +
-        `https://play.google.com/store/apps/details?id=com.ksmobile`,
-    );
-
+  parts.push(
+    `ଆପ୍ ଡାଉନଲୋଡ୍ କରନ୍ତୁ: ` +
+      `https://play.google.com/store/apps/details?id=com.ksmobile`,
+  );
   parts.push(`Read more: ${article.postSourceLink}`);
   return parts.join("\n\n");
 }

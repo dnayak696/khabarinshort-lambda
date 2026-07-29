@@ -176,11 +176,8 @@ const templateHeader = ({ WIDTH, title, titleLines }) => {
     width="${headerContentWidth}"
     height="${HEADER_HEIGHT - HEADER_PADDING_Y * 2}"
     rx="24"
-    fill="#FFFFFF"
+    fill="#FDE047"
     fill-opacity="0.18"
-    stroke="#000000"
-    stroke-opacity="0.15"
-    stroke-width="3"
   />
 
   <text
