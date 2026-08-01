@@ -413,15 +413,20 @@ const templates = [
   },
 ];
 
-function pickRandomTemplate({ title, description }) {
-  if (title || description) {
-    return (
-      templates.find((template) => template.name === "News Sort") ||
-      templates[0]
-    );
+let lastTemplateIndex = -1;
+
+function pickRandomTemplate() {
+  if (templates.length <= 1) {
+    return templates[0];
   }
 
-  return templates[Math.floor(Math.random() * templates.length)];
+  let templateIndex = Math.floor(Math.random() * (templates.length - 1));
+  if (templateIndex >= lastTemplateIndex) {
+    templateIndex += 1;
+  }
+
+  lastTemplateIndex = templateIndex;
+  return templates[templateIndex];
 }
 
 async function generateMobilePost({
@@ -474,8 +479,8 @@ async function generateMobilePost({
 
   const template = templateName
     ? templates.find((template) => template.name === templateName) ||
-      pickRandomTemplate({ title, description })
-    : pickRandomTemplate({ title, description });
+      pickRandomTemplate()
+    : pickRandomTemplate();
   const svg = template.svg({
     WIDTH,
     HEIGHT,
