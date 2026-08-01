@@ -119,7 +119,7 @@ exports.handler = async (event) => {
 
 async function publishFacebookMedia(page, config) {
   const url = `https://graph.facebook.com/v25.0/${page.id}/photos`;
-
+  const feedPostUrl = `https://graph.facebook.com/v25.0/${page.id}/feed`;
   try {
     console.log("Image URL:", config.image_url);
     const response = await axios.post(url, null, {
@@ -128,7 +128,17 @@ async function publishFacebookMedia(page, config) {
         message: config.caption,
         access_token: page.access_token,
         url: config.image_url,
-        published: true,
+        published: false, // Set to false to create a draft post instead of publishing immediately
+      },
+    });
+
+    const photoId = response.data.id;
+
+    // Now publish the photo to the page's feed
+    const publishResponse = await axios.post(feedPostUrl, null, {
+      params: {
+        attached_media: [{ media_fbid: photoId }],
+        access_token: page.access_token,
       },
     });
 
