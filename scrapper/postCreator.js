@@ -125,7 +125,6 @@ async function publishFacebookMedia(page, config) {
     const response = await axios.post(url, null, {
       // Axios injects these into the URL as key=value pairs automatically
       params: {
-        message: config.caption,
         access_token: page.access_token,
         url: config.image_url,
         published: false, // Set to false to create a draft post instead of publishing immediately
@@ -137,7 +136,9 @@ async function publishFacebookMedia(page, config) {
     // Now publish the photo to the page's feed
     const publishResponse = await axios.post(feedPostUrl, null, {
       params: {
+        message: config.caption,
         attached_media: [{ media_fbid: photoId }],
+        published: true,
         access_token: page.access_token,
       },
     });
